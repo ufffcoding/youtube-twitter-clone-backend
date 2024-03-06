@@ -20,10 +20,4 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-cloudinary.uploader.upload(
-  localFilePath,
-  { public_id: "olympic_flag" },
-  function (error, result) {
-    console.log(result);
-  }
-);
+export { uploadOnCloudinary };
