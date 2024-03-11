@@ -4,6 +4,8 @@ import {
   logoutUser,
   registerUser,
   refreshAccessToken,
+  changeCurrentPassword,
+  changeAccountDetails,
 } from "../controllers/user.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
@@ -27,6 +29,8 @@ router.route("/register").post(
 router.route("/login").post(loginUser);
 
 router.route("/logout").post(verifyJWT, logoutUser);
-router.route("/refreshAccessToken").post(refreshAccessToken);
+router.route("/refresh-Token").post(refreshAccessToken);
+router.route("/change-Password").post(verifyJWT, changeCurrentPassword);
+router.route("/change-details").post(verifyJWT, changeAccountDetails);
 
 export default router;
