@@ -268,6 +268,52 @@ const changeAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Details updated successfully"));
 });
 
+const updateAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.files.avatar[0]?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar not found");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar) {
+    throw new ApiError(500, "Avatar not uploaded");
+  }
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $set: {
+      avatar: avatar.url,
+    },
+  }).select("-password");
+
+  res.status(200).json(new ApiResponse(200, {}, "Avatar updated successfully"));
+});
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.files.coverImage[0]?.path;
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover image not found");
+  }
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage) {
+    throw new ApiError(500, "Cover image not uploaded");
+  }
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $set: {
+      coverImage: coverImage.url,
+    },
+  }).select("-password");
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Cover image updated successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -275,4 +321,6 @@ export {
   refreshAccessToken,
   changeCurrentPassword,
   changeAccountDetails,
+  updateAvatar,
+  updateCoverImage,
 };
