@@ -29,13 +29,17 @@ const userSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
-    avatar: {
-      type: String, // cloudinary
-      required: true,
-    },
-    coverImage: {
-      type: String, // cloudinary
-    },
+    avatar: [
+      {
+        type: String, // cloudinary
+        required: true,
+      },
+    ],
+    coverImage: [
+      {
+        type: String, // cloudinary
+      },
+    ],
     refreshToken: {
       type: String,
     },
