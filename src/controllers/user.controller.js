@@ -1,10 +1,10 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
-import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -411,7 +411,9 @@ const getUserChannelprofile = asyncHandler(async (req, res) => {
 const getUserWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
-      $match: [mongoose.Schema.Types.ObjectId(req.user?._id)],
+      $match: {
+        id: mongoose.Schema.Types.ObjectId(req.user?._id),
+      },
     },
     {
       $lookup: {
@@ -464,6 +466,7 @@ export {
   logoutUser,
   refreshAccessToken,
   changeCurrentPassword,
+  getCurrentUser,
   changeAccountDetails,
   updateAvatar,
   updateCoverImage,
