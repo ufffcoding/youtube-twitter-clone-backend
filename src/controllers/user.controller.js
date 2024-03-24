@@ -37,14 +37,13 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User already exists");
   }
 
+  console.log(req.files?.avatar[0]?.path);
+
   const avatarLocalPath = await req.files?.avatar[0]?.path;
 
   let coverImageLocalPath;
-  if (
-    req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.length() > 0
-  ) {
+
+  if (req.files.coverImage.length > 0) {
     coverImageLocalPath = req.files?.coverImage[0]?.path;
   }
 
@@ -64,8 +63,9 @@ const registerUser = asyncHandler(async (req, res) => {
     email: email,
     password: password,
     fullName: fullName,
-    avatar: [avatar.url, avatar.public_id],
-    coverImage: [coverImage.url, coverImage.public_id] || [],
+    avatar: [{ url: avatar.url }, { public_url: avatar.public_id }],
+    coverImage:
+      [{ url: coverImage.url }, { public_url: coverImage.public_id }] || [],
   });
 
   const createdUser = await User.findById(user._id).select(
@@ -348,6 +348,7 @@ const getUserChannelprofile = asyncHandler(async (req, res) => {
         username: username.toLowerCase(),
       },
     },
+    // get subscribers from subscriptions
     {
       $lookup: {
         from: "subscriptions",
@@ -356,6 +357,7 @@ const getUserChannelprofile = asyncHandler(async (req, res) => {
         as: "subscribers",
       },
     },
+    // get channels subscribedTo from subscriptions
     {
       $lookup: {
         from: "subscriptions",
@@ -367,39 +369,49 @@ const getUserChannelprofile = asyncHandler(async (req, res) => {
     {
       $addFields: {
         subscriberCount: {
-          $size: "$subscribers",
+          $size: {
+            $filter: {
+              input: "$subscribers",
+              as: "sub",
+              cond: { $eq: ["$$sub.subscribed", true] },
+            },
+          },
         },
         subscriberToCount: {
-          $size: "$subscribedTo",
+          $size: {
+            $filter: {
+              input: "$subscribedTo",
+              as: "sub",
+              cond: { $eq: ["$$sub.subscribed", true] },
+            },
+          },
         },
-        isSubscrided: {
+        isSubscribed: {
           $cond: {
             if: {
-              $in: [req.user._id, "$subscribers.subscriber"],
+              $in: [req.user?._id, "$subscribedTo.channel"],
             },
-            then: true,
-            else: false,
+            then: "owner",
+            else: "$subscribers.subscribed",
           },
         },
       },
     },
+
     {
       $project: {
+        _id: 0,
         fullName: 1,
         username: 1,
         email: 1,
-        subscriberCount: 1,
-        subscriberToCount: 1,
-        isSubscrided: 1,
         avatar: 1,
         coverImage: 1,
+        subscriberCount: 1,
+        subscriberToCount: 1,
+        isSubscribed: 1,
       },
     },
   ]);
-
-  if (!channel?.length) {
-    throw new ApiError(404, "Channel does not exists");
-  }
 
   return res
     .status(200)
@@ -412,7 +424,7 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        id: mongoose.Schema.Types.ObjectId(req.user?._id),
+        _id: new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
@@ -421,43 +433,35 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
         localField: "watchHistory",
         foreignField: "_id",
         as: "watchHistory",
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "owner",
-              foreignField: "_id",
-              as: "owner",
-              pipeline: [
-                {
-                  $project: {
-                    username: 1,
-                    fullName: 1,
-                    avatar: 1,
-                  },
-                },
-              ],
-            },
-            $addFields: {
-              owner: {
-                $first: "owner",
-              },
-            },
-          },
-        ],
+      },
+    },
+    {
+      $unwind: "$watchHistory",
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "watchHistory.owner",
+        foreignField: "_id",
+        as: "watchHistory.owner",
+      },
+    },
+    {
+      $addFields: {
+        "watchHistory.owner": { $arrayElemAt: ["$watchHistory.owner", 0] },
+      },
+    },
+    {
+      $project: {
+        "watchHistory.owner.password": 0,
+        "watchHistory.owner.refreshToken": 0,
       },
     },
   ]);
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        user[0].watchHistory,
-        "Watch history fetched successfully"
-      )
-    );
+    .json(new ApiResponse(200, user, "Watch history fetched successfully"));
 });
 
 export {

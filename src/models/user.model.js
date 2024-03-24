@@ -29,17 +29,8 @@ const userSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
-    avatar: [
-      {
-        type: String, // cloudinary
-        required: true,
-      },
-    ],
-    coverImage: [
-      {
-        type: String, // cloudinary
-      },
-    ],
+    avatar: [{ url: String, public_url: String, _id: false }],
+    coverImage: [{ url: String, public_url: String, _id: false }],
     refreshToken: {
       type: String,
     },

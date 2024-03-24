@@ -4,15 +4,19 @@ import { upload } from "../middleware/multer.middleware.js";
 import {
   getAllVideos,
   uploadVideo,
+  getVideoById,
   deleteVideo,
+  updateVideo,
+  togglePublishStatus,
 } from "../controllers/video.controller.js";
 
 const router = express.Router();
 
-router.route("/getAllVideos").post(verifyJWT, getAllVideos);
+router.use(verifyJWT);
+
+router.route("/getAllVideos").get(getAllVideos);
 
 router.route("/uploadVideo").post(
-  verifyJWT,
   upload.fields([
     {
       name: "videoFile",
@@ -26,6 +30,12 @@ router.route("/uploadVideo").post(
   uploadVideo
 );
 
-router.route("/deleteVideo").post(verifyJWT, deleteVideo);
+router.route("/getVideoById/:videoId").get(getVideoById);
+
+router.route("/deleteVideo/:videoId").get(deleteVideo);
+
+router.route("/updateVideo").get(updateVideo);
+
+router.route("/togglePublishStatus/:videoId").get(togglePublishStatus);
 
 export default router;

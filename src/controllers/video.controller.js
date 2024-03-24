@@ -3,18 +3,35 @@ import { Video } from "../models/video.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import mongoose from "mongoose";
+import { query } from "express";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const video = await Video.aggregate([
-    {
-      $match: {
-        owner: req.user?._id,
-      },
-    },
-  ]);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const sortBy = req.query.sortBy || "createdAt";
+  const sortType = req.query.sortType || "desc";
+  const userId = req.query.userId;
 
-  res.status(200).json(new ApiResponse(200, video));
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+
+  const totalDocuments = await Video.countDocuments();
+
+  if (userId) {
+    query;
+  }
+
+  if (sortBy && sortType) {
+    query;
+  }
+
+  const video = await Video.find()
+    .skip(startIndex)
+    .limit(limit)
+    .sort({ [sortBy]: sortType })
+    .where({ userId: userId });
+
+  res.status(200).json(new ApiResponse(200, [{ totalDocuments }, { video }]));
 });
 
 const uploadVideo = asyncHandler(async (req, res) => {
@@ -62,14 +79,28 @@ const uploadVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video Uploaded successfully"));
 });
 
-const deleteVideo = asyncHandler(async (req, res) => {
-  const { id } = req.body;
+const getVideoById = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
 
-  if (!id) {
+  if (!videoId) {
+    throw new ApiError(404, "VideoId is needed");
+  }
+
+  const video = await Video.findById(videoId);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video fetched successfully"));
+});
+
+const deleteVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
     throw new ApiError(404, "Id is needed");
   }
 
-  const video = await Video.findById(id);
+  const video = await Video.findById(videoId);
 
   if (!video) {
     throw new ApiError(404, "Video does not exist");
@@ -79,13 +110,64 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Only owner can delete video");
   }
 
-  await Video.findByIdAndDelete(id);
+  await Video.findByIdAndDelete(videoId);
 
-  res.status(200).json(new ApiResponse(200, id, "Video deleted successfully"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, videoId, "Video deleted successfully"));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
-  const { id, title, description } = req.body;
+  const { videoId, title, description } = req.body;
+
+  if (!videoId) {
+    throw new ApiError(404, "VideoId is needed");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!req.user?._id.equals(video.owner)) {
+    throw new ApiError(404, "Only owner can delete video");
+  }
+
+  const updatedVideo = await Video.findByIdAndUpdate(videoId, {
+    title,
+    description,
+  });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, updateVideo, "Video updated successfully"));
 });
 
-export { getAllVideos, uploadVideo, deleteVideo };
+const togglePublishStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new ApiError(404, "VideoId is needed");
+  }
+
+  const video = await Video.findById(videoId);
+
+  const status = video.isPublished ? false : true;
+
+  await Video.findByIdAndUpdate(videoId, { isPublished: status });
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        status,
+        `${status ? "Your video is public" : "Your video is private"}`
+      )
+    );
+});
+
+export {
+  getAllVideos,
+  uploadVideo,
+  getVideoById,
+  deleteVideo,
+  updateVideo,
+  togglePublishStatus,
+};
