@@ -20,7 +20,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     },
   ]);
 
-  console.log(likedVideo);
+  if (!likedVideo) {
+    throw new ApiError(400, "Liked videos not fetched");
+  }
 
   res
     .status(200)
@@ -29,6 +31,10 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new ApiError(400, "VideoId is missing");
+  }
 
   const liked = await Like.findOne({
     video: videoId,
@@ -55,6 +61,10 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 const toggleCommentLike = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
 
+  if (!commentId) {
+    throw new ApiError(400, "CommentId is missing");
+  }
+
   const liked = await Like.findOne({
     comment: commentId,
   });
@@ -79,6 +89,10 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
+
+  if (!tweetId) {
+    throw new ApiError(400, "TweetId is missing");
+  }
 
   const liked = await Like.findOne({
     tweet: tweetId,

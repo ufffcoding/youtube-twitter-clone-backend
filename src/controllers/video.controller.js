@@ -15,8 +15,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
 
-  const totalDocuments = await Video.countDocuments();
-
   if (userId) {
     query;
   }
@@ -31,7 +29,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
     .sort({ [sortBy]: sortType })
     .where({ userId: userId });
 
-  res.status(200).json(new ApiResponse(200, [{ totalDocuments }, { video }]));
+  console.log(video);
+
+  const totalDocuments = video.length;
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, video, "Videos fetched successfully"));
 });
 
 const uploadVideo = asyncHandler(async (req, res) => {
@@ -137,7 +141,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, updateVideo, "Video updated successfully"));
+    .json(new ApiResponse(200, updatedVideo, "Video updated successfully"));
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {

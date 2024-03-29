@@ -12,11 +12,10 @@ import {
 
 const router = express.Router();
 
-router.use(verifyJWT);
-
 router.route("/getAllVideos").get(getAllVideos);
 
 router.route("/uploadVideo").post(
+  verifyJWT,
   upload.fields([
     {
       name: "videoFile",
@@ -32,10 +31,12 @@ router.route("/uploadVideo").post(
 
 router.route("/getVideoById/:videoId").get(getVideoById);
 
-router.route("/deleteVideo/:videoId").get(deleteVideo);
+router.route("/deleteVideo/:videoId").get(verifyJWT, deleteVideo);
 
-router.route("/updateVideo").get(updateVideo);
+router.route("/updateVideo").get(verifyJWT, updateVideo);
 
-router.route("/togglePublishStatus/:videoId").get(togglePublishStatus);
+router
+  .route("/togglePublishStatus/:videoId")
+  .get(verifyJWT, togglePublishStatus);
 
 export default router;
